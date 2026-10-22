@@ -15,7 +15,7 @@ Docente: Ing. Jorge Ricardo Perez Vigil
 
 ## Repositorio
 
-(https://github.com/arpumav-cmd/MesadePartes_FundamentosP.git)
+https://github.com/arpumav-cmd/MesaDePartes.git
 
 ## Requisitos
 
