@@ -1,25 +1,27 @@
 namespace MesaDePartes
 {
     // FLUJOS DE MENÚ: piden datos (Entrada), llaman a la lógica (clsExpedientes)
-    // y muestran resultados.
+    // y muestran resultados. Las funciones que pueden cambiar los datos devuelven
+    // true para que Program.cs guarde el archivo automáticamente.
     public static class Operaciones
     {
         // ---------- 1. REGISTRAR ----------
-        public static void RegistrarExpediente(ref Expediente[] exps, ref int cantidad)
+        public static bool RegistrarExpediente(ref Expediente[] exps, ref int cantidad)
         {
             string cod = Entrada.PedirCodigo(exps, cantidad);
             string dni = Entrada.PedirDNI();
             string ape = Entrada.PedirNombre("Ingrese Apellidos (Ej: Alaya Pérez):");
             string nom = Entrada.PedirNombre("Ingrese Nombres (Ej: Daniel Luis):");
-            string gra = Entrada.PedirTexto("Ingrese Grado y Sección (Ej: 3ro A):", 2);
-            string tip = Entrada.PedirTexto("Ingrese Tipo de Trámite:", 3);
-            string asu = Entrada.PedirTexto("Ingrese Asunto de la solicitud:", 5);
+            string gra = Entrada.PedirTexto("Ingrese Grado y Sección (Ej: 3ro A):", Validaciones.MinGrado);
+            string tip = Entrada.PedirTexto("Ingrese Tipo de Trámite:", Validaciones.MinTramite);
+            string asu = Entrada.PedirTexto("Ingrese Asunto de la solicitud:", Validaciones.MinAsunto);
             string fec = Entrada.PedirFecha();
  
             Expediente nuevo = new Expediente(cod, dni, ape, nom, gra, tip, asu, fec, Expediente.Estados[0]);
             clsExpedientes.Agregar(ref exps, ref cantidad, nuevo);
  
             Console.WriteLine("¡Éxito! Expediente [" + cod + "] registrado.");
+            return true;
         }
  
         // ---------- 2. BUSCAR ----------
@@ -31,7 +33,7 @@ namespace MesaDePartes
                 return;
             }
  
-             Console.WriteLine("Buscar por: 1. Código   2. Apellido   3. Texto del asunto");
+            Console.WriteLine("Buscar por: 1. Código   2. Apellido   3. Texto del asunto");
             int tipo = Entrada.LeerOpcion();
             if (tipo == 1) BuscarPorCodigo(exps, cantidad);
             else if (tipo == 2) BuscarPorApellido(exps, cantidad);
@@ -42,7 +44,23 @@ namespace MesaDePartes
         private static void BuscarPorCodigo(Expediente[] exps, int cantidad)
         {
             string buscado = Entrada.PedirBusqueda("Ingrese el código que desea buscar (Ej: EXP-001):").ToUpper();
+ 
             int pos = clsExpedientes.BuscarIndice(exps, cantidad, buscado);
+            int compLineal = (pos == -1) ? cantidad : pos + 1;
+            Console.WriteLine("Búsqueda lineal: " + compLineal + " comparaciones.");
+ 
+            // Si la lista está ordenada por código, también se prueba la búsqueda binaria.
+            if (clsExpedientes.EstaOrdenadoPorCodigo(exps, cantidad))
+            {
+                int compBinaria;
+                clsExpedientes.BuscarBinarioIterativo(exps, cantidad, buscado, out compBinaria);
+                Console.WriteLine("Búsqueda binaria: " + compBinaria + " comparaciones (lista ordenada por código).");
+            }
+            else
+            {
+                Console.WriteLine("(Para comparar con la búsqueda binaria, ordene primero por código: opción 3.)");
+            }
+ 
             if (pos == -1)
                 Console.WriteLine("No se encontró ningún expediente con el código: " + buscado);
             else
@@ -70,7 +88,7 @@ namespace MesaDePartes
                 }
             }
             MostrarResumenBusqueda(encontrados, "No se encontró ningún expediente con el apellido: " + buscado);
-                    }
+        }
  
         // Busca un texto dentro del asunto (IndexOf, sin distinguir mayúsculas).
         private static void BuscarPorAsunto(Expediente[] exps, int cantidad)
@@ -92,7 +110,6 @@ namespace MesaDePartes
                 }
             }
             MostrarResumenBusqueda(encontrados, "No se encontró ningún asunto que contenga: " + buscado);
-
         }
  
         // Muestra un expediente encontrado en una búsqueda por apellido o por asunto.
@@ -121,19 +138,21 @@ namespace MesaDePartes
             Console.WriteLine();
         }
  
-        public static void OrdenarExpedientes(Expediente[] exps, int cantidad)
+        // Devuelve true si hubo intercambios (el orden de los datos cambió y hay que guardar).
+        public static bool OrdenarExpedientes(Expediente[] exps, int cantidad)
         {
             if (cantidad <= 1)
             {
                 Console.WriteLine("No hay suficientes expedientes para ordenar.");
-                return;
+                return false;
             }
-                        Console.WriteLine("Ordenar por: 1. Código   2. Apellido");
+ 
+            Console.WriteLine("Ordenar por: 1. Código   2. Apellido");
             int criterio = Entrada.LeerOpcion();
             if (criterio != 1 && criterio != 2)
             {
                 Console.WriteLine("Opción no válida.");
-                return;
+                return false;
             }
  
             int comparaciones = 0;
@@ -147,9 +166,8 @@ namespace MesaDePartes
  
             for (int i = 0; i <= cantidad - 2; i++)
             {
-            int cambiosPasada = clsExpedientes.PasadaBurbuja(exps, cantidad, i, criterio,
+                int cambiosPasada = clsExpedientes.PasadaBurbuja(exps, cantidad, i, criterio,
                                                                  ref comparaciones, ref intercambios);
-
                 Console.WriteLine("Pasada " + (i + 1) + " (" + cambiosPasada + " intercambios):");
                 MostrarOrden(exps, cantidad);
             }
@@ -160,8 +178,9 @@ namespace MesaDePartes
             Console.WriteLine("Comparaciones realizadas: " + comparaciones);
             Console.WriteLine("Intercambios realizados:  " + intercambios);
             if (intercambios == 0)
-            Console.WriteLine("(La lista ya estaba ordenada.)");
+                Console.WriteLine("(La lista ya estaba ordenada.)");
             Console.WriteLine("============================================================");
+            return intercambios > 0;
         }
  
         // ---------- 4. LISTAR ----------
@@ -185,41 +204,26 @@ namespace MesaDePartes
         private static int PedirExistente(Expediente[] exps, int cantidad, string accion)
         {
             string buscado = Entrada.PedirBusqueda("Ingrese el código del expediente a " + accion + " (Ej: EXP-001):").ToUpper();
-            
             int pos = clsExpedientes.BuscarIndice(exps, cantidad, buscado);
-                        int compLineal = (pos == -1) ? cantidad : pos + 1;
-            Console.WriteLine("Búsqueda lineal: " + compLineal + " comparaciones.");
- 
-            // Si la lista está ordenada por código, también se prueba la búsqueda binaria.
-            if (clsExpedientes.EstaOrdenadoPorCodigo(exps, cantidad))
-            {
-                int compBinaria;
-                clsExpedientes.BuscarBinarioIterativo(exps, cantidad, buscado, out compBinaria);
-                Console.WriteLine("Búsqueda binaria: " + compBinaria + " comparaciones (lista ordenada por código).");
-            }
-            else
-            {
-                Console.WriteLine("(Para comparar con la búsqueda binaria, ordene primero por código: opción 3.)");
-            }
- 
             if (pos == -1)
                 Console.WriteLine("No se encontró ningún expediente con el código: " + buscado);
             return pos;
         }
  
         // ---------- 5. MODIFICAR ----------
-        public static void ModificarExpediente(Expediente[] exps, int cantidad)
+        public static bool ModificarExpediente(Expediente[] exps, int cantidad)
         {
             if (cantidad == 0)
             {
                 Console.WriteLine("No hay expedientes registrados para modificar.");
-                return;
+                return false;
             }
  
             int pos = PedirExistente(exps, cantidad, "modificar");
-            if (pos == -1) return;
+            if (pos == -1) return false;
  
             Expediente e = exps[pos];
+            bool huboCambios = false;
             int campo;
             do
             {
@@ -228,8 +232,10 @@ namespace MesaDePartes
                 MostrarMenuModificar();
                 campo = Entrada.LeerOpcion();
  
-                ModificarCampo(e, campo);
+                if (ModificarCampo(e, campo))
+                    huboCambios = true;
             } while (campo != 8);
+            return huboCambios;
         }
  
         private static void MostrarMenuModificar()
@@ -263,11 +269,11 @@ namespace MesaDePartes
                     Console.WriteLine("Nombres actualizados.");
                     return true;
                 case 4:
-                    e.Grado = Entrada.PedirTexto("Ingrese nuevo Grado y Sección (Ej: 3ro A):", 2);
+                    e.Grado = Entrada.PedirTexto("Ingrese nuevo Grado y Sección (Ej: 3ro A):", Validaciones.MinGrado);
                     Console.WriteLine("Grado y Sección actualizados.");
                     return true;
                 case 5:
-                    e.TipoTramite = Entrada.PedirTexto("Ingrese nuevo Tipo de Trámite:", 3);
+                    e.TipoTramite = Entrada.PedirTexto("Ingrese nuevo Tipo de Trámite:", Validaciones.MinTramite);
                     Console.WriteLine("Tipo de trámite actualizado.");
                     return true;
                 case 6:
@@ -275,7 +281,7 @@ namespace MesaDePartes
                     Console.WriteLine("Fecha actualizada.");
                     return true;
                 case 7:
-                    e.Asunto = Entrada.PedirTexto("Ingrese nuevo Asunto:", 5);
+                    e.Asunto = Entrada.PedirTexto("Ingrese nuevo Asunto:", Validaciones.MinAsunto);
                     Console.WriteLine("Asunto actualizado.");
                     return true;
                 case 8:
@@ -288,16 +294,16 @@ namespace MesaDePartes
         }
  
         // ---------- 6. CAMBIAR ESTADO ----------
-        public static void CambiarEstado(Expediente[] exps, int cantidad)
+        public static bool CambiarEstado(Expediente[] exps, int cantidad)
         {
             if (cantidad == 0)
             {
                 Console.WriteLine("No hay expedientes registrados.");
-                return;
+                return false;
             }
  
             int pos = PedirExistente(exps, cantidad, "actualizar");
-            if (pos == -1) return;
+            if (pos == -1) return false;
  
             Console.WriteLine("Estado actual: " + exps[pos].Estado);
             Console.WriteLine("Nuevo estado:");
@@ -308,25 +314,25 @@ namespace MesaDePartes
             if (op < 1 || op > Expediente.Estados.Length)
             {
                 Console.WriteLine("Opción no válida.");
-                return;
+                return false;
             }
  
             exps[pos].Estado = Expediente.Estados[op - 1];
             Console.WriteLine("Estado actualizado a: " + exps[pos].Estado);
+            return true;
         }
  
         // ---------- 7. ELIMINAR ----------
-
-        public static void EliminarExpediente(Expediente[] exps, ref int cantidad)
+        public static bool EliminarExpediente(Expediente[] exps, ref int cantidad)
         {
             if (cantidad == 0)
             {
                 Console.WriteLine("No hay expedientes registrados para eliminar.");
-                return;
+                return false;
             }
  
             int pos = PedirExistente(exps, cantidad, "eliminar");
-            if (pos == -1) return;
+            if (pos == -1) return false;
  
             Console.WriteLine(exps[pos].ToDetalle());
             string confirma = Entrada.PedirBusqueda("¿Está seguro de eliminar este expediente? (S/N):").ToUpper();
@@ -335,10 +341,11 @@ namespace MesaDePartes
             {
                 clsExpedientes.Eliminar(exps, ref cantidad, pos);
                 Console.WriteLine("Expediente eliminado correctamente.");
+                return true;
             }
  
             Console.WriteLine("Eliminación cancelada.");
-            return;
+            return false;
         }
     }
 }

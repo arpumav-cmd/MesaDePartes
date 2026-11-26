@@ -1,6 +1,6 @@
 namespace MesaDePartes
 {
-    // Cada función repite la pregunta hasta que el dato sea válido.
+    // Lectura por teclado. Cada función repite la pregunta hasta que el dato sea válido.
     public static class Entrada
     {
         // Lee una opción numérica (puede tener varios dígitos). Si no es un número, devuelve -1.
@@ -22,7 +22,7 @@ namespace MesaDePartes
  
 
 
-        // Pide el código y repite hasta que no esté vacío ni repetido (evita códigos duplicados).
+        // Pide un código en MAYÚSCULAS; no vacío, sin ';' y sin repetir.
         public static string PedirCodigo(Expediente[] exps, int cantidad)
         {
             string cod;
@@ -32,8 +32,10 @@ namespace MesaDePartes
                 Console.WriteLine("Ingrese el código del expediente (Ej: EXP-001):");
                 cod = (Console.ReadLine() ?? "").Trim().ToUpper();
                 valido = false;
-                if (cod.Length < 3)
-                    Console.WriteLine("ERROR: El código debe tener al menos 3 caracteres.");
+                if (cod.Length < Validaciones.MinCodigo)
+                    Console.WriteLine("ERROR: El código debe tener al menos " + Validaciones.MinCodigo + " caracteres.");
+                else if (Validaciones.TieneSeparador(cod))
+                    Console.WriteLine("ERROR: No se permite el carácter ';' en este campo.");
                 else if (clsExpedientes.BuscarIndice(exps, cantidad, cod) != -1)
                     Console.WriteLine("ERROR: El código " + cod + " ya existe. Ingrese otro.");
                 else
@@ -67,17 +69,23 @@ namespace MesaDePartes
             } while (!Validaciones.ValidarNombre(nom));
             return nom;
         }
-
+        // Texto libre con longitud mínima. No admite ';' (es el separador del archivo).
         public static string PedirTexto(string mensaje, int minimo)
         {
             string txt;
+            bool valido;
             do
             {
                 Console.WriteLine(mensaje);
                 txt = (Console.ReadLine() ?? "").Trim();
+                valido = false;
                 if (txt.Length < minimo)
                     Console.WriteLine("ERROR: Este campo debe tener al menos " + minimo + " caracteres.");
-            } while (txt.Length < minimo);
+                else if (Validaciones.TieneSeparador(txt))
+                    Console.WriteLine("ERROR: No se permite el carácter ';' en este campo.");
+                else
+                    valido = true;
+            } while (!valido);
             return txt;
         }
 
@@ -99,7 +107,8 @@ namespace MesaDePartes
                         Console.WriteLine("ERROR: Esa fecha no existe en el calendario (revise el día y el mes).");
                         break;
                     case 3:
-                        Console.WriteLine("ERROR: Año no permitido. Debe estar entre 2020 y 2026.");
+                        Console.WriteLine("ERROR: Año no permitido. Debe estar entre " + Validaciones.AnioMinimo
+                            + " y " + Validaciones.AnioMaximo() + ".");
                         break;
                 }
             } while (codErr != 0);

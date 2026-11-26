@@ -2,6 +2,13 @@ namespace MesaDePartes
 {
     public static class Validaciones
     {
+         // Longitudes mínimas: se usan al escribir por teclado y al leer el archivo,
+        // así si se cambia un valor, cambia en los dos sitios.
+        public const int MinCodigo = 3;
+        public const int MinGrado = 2;
+        public const int MinTramite = 3;
+        public const int MinAsunto = 5;
+ 
         // DNI: 8 dígitos numéricos y distinto de 00000000.
         public static bool ValidarDNI(string dni)
         {
@@ -29,7 +36,21 @@ namespace MesaDePartes
             }
             return letras >= 2;
         }
-
+        // El ';' es el separador del archivo: no puede aparecer dentro de un dato.
+        public static bool TieneSeparador(string texto)
+        {
+            return texto.IndexOf(';') != -1;
+        }
+ 
+        public static bool EsEstadoValido(string estado)
+        {
+            for (int k = 0; k < Expediente.Estados.Length; k++)
+            {
+                if (Expediente.Estados[k] == estado) return true;
+            }
+            return false;
+        }
+ 
         // Días de un mes (considera años bisiestos).
         public static int DiasDelMes(int mes, int anio)
         {
@@ -45,8 +66,12 @@ namespace MesaDePartes
         // Devuelve: 0 = válida | 1 = formato incorrecto | 2 = día o mes inexistente | 3 = año fuera de rango
         public static int ValidarFecha(string fec)
         {
-            int anioMin = 2020;
-            int anioMax = 2026;
+        // Año máximo permitido: el año actual del sistema (antes estaba fijo en 2026).
+        public const int AnioMinimo = 2020;
+        public static int AnioMaximo()
+        {
+            return DateTime.Now.Year;
+        }
 
             if (fec.Length != 10) return 1;
             for (int k = 0; k < 10; k++)
@@ -65,7 +90,7 @@ namespace MesaDePartes
             int mes = int.Parse(fec.Substring(3, 2));
             int anio = int.Parse(fec.Substring(6, 4));
 
-            if (anio < anioMin || anio > anioMax) return 3;
+            if (anio < AnioMinimo || anio > AnioMaximo()) return 3;
             if (mes < 1 || mes > 12) return 2;
             if (dia < 1 || dia > DiasDelMes(mes, anio)) return 2;
             return 0;
