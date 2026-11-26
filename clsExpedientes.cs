@@ -23,14 +23,37 @@ namespace MesaDePartes
             exps[cantidad] = nuevo;
             cantidad++;
         }
+                // Búsqueda lineal por código (recursiva). Devuelve la posición o -1 si no existe.
+        public static int BuscarIndice(Expediente[] exps, int cantidad, string codigo, int k = 0)
+        {
+            if (k >= cantidad) return -1;                    // caso base: se acabó el arreglo
+            if (exps[k].Codigo == codigo) return k;          // caso base: encontrado
+            return BuscarIndice(exps, cantidad, codigo, k + 1);   // caso recursivo
+        }
  
-        // Búsqueda lineal por código. Devuelve la posición o -1 si no existe.
-        public static int BuscarIndice(Expediente[] exps, int cantidad, string codigo)
+        // Búsqueda binaria por código (recursiva). La lista debe estar ordenada por código.
+        // Se llama con izq = 0 y der = cantidad - 1; 'comparaciones' empieza en 0 y se va acumulando.
+        public static int BuscarBinario(Expediente[] exps, string codigo, int izq, int der, ref int comparaciones)
+        {
+            if (izq > der) return -1;                        // caso base: no existe
+            int medio = (izq + der) / 2;
+            comparaciones++;
+            int c = string.Compare(exps[medio].Codigo, codigo, StringComparison.Ordinal);
+            if (c == 0) return medio;                        // caso base: encontrado
+            if (c < 0) return BuscarBinario(exps, codigo, medio + 1, der, ref comparaciones);   // caso recursivo: mitad derecha
+            return BuscarBinario(exps, codigo, izq, medio - 1, ref comparaciones);              // caso recursivo: mitad izquierda
+        }
+ 
+        // Versiones con ciclo (para comparar con las anteriores en el informe).
+        public static int BuscarIndiceIterativo(Expediente[] exps, int cantidad, string codigo, out int comparaciones)
+
         {
             int pos = -1;
             int k = 0;
+            comparaciones = 0;
             while (k < cantidad && pos == -1)
             {
+                comparaciones++;
                 if (exps[k].Codigo == codigo)
                     pos = k;
                 k++;
@@ -38,8 +61,6 @@ namespace MesaDePartes
             return pos;
         }
  
-        // Búsqueda binaria por código (con ciclo). La lista debe estar ordenada por código.
-        // 'comparaciones' devuelve cuántas comparaciones se hicieron.
         public static int BuscarBinarioIterativo(Expediente[] exps, int cantidad, string codigo, out int comparaciones)
 
         {
@@ -57,16 +78,13 @@ namespace MesaDePartes
             }
             return -1;
         }
- 
-        // ¿La lista está ordenada por código? (necesario para la búsqueda binaria)
-        public static bool EstaOrdenadoPorCodigo(Expediente[] exps, int cantidad)
+         // ¿La lista está ordenada por código? (necesario para la búsqueda binaria) - recursiva
+        public static bool EstaOrdenadoPorCodigo(Expediente[] exps, int cantidad, int k = 0)
         {
-            for (int k = 0; k < cantidad - 1; k++)
-            {
-                if (string.Compare(exps[k].Codigo, exps[k + 1].Codigo, StringComparison.Ordinal) > 0)
-                    return false;
-            }
-            return true;
+            if (k >= cantidad - 1) return true;              // caso base: no quedan pares por revisar
+            if (string.Compare(exps[k].Codigo, exps[k + 1].Codigo, StringComparison.Ordinal) > 0)
+                return false;                                // caso base: se encontró un par desordenado
+            return EstaOrdenadoPorCodigo(exps, cantidad, k + 1);   // caso recursivo
         }
  
         // Compara dos expedientes. criterio: 1 = código, 2 = apellido (y nombres si hay empate).

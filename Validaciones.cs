@@ -2,24 +2,34 @@ namespace MesaDePartes
 {
     public static class Validaciones
     {
-         // Longitudes mínimas: se usan al escribir por teclado y al leer el archivo,
+        // Longitudes mínimas: se usan al escribir por teclado y al leer el archivo,
         // así si se cambia un valor, cambia en los dos sitios.
         public const int MinCodigo = 3;
         public const int MinGrado = 2;
         public const int MinTramite = 3;
         public const int MinAsunto = 5;
- 
+
+        // Año mínimo y máximo permitido.
+        public const int AnioMinimo = 2020;
+        public static int AnioMaximo()
+        {
+            return DateTime.Now.Year;
+        }
+
+        // Comprueba (de forma recursiva) que todos los caracteres desde la posición k sean dígitos.
+        public static bool SoloDigitos(string texto, int k = 0)
+        {
+            if (k == texto.Length) return true;              // caso base: se revisó todo el texto
+            if (texto[k] < '0' || texto[k] > '9') return false;   // caso base: carácter que no es dígito
+            return SoloDigitos(texto, k + 1);                // caso recursivo
+        }
+
         // DNI: 8 dígitos numéricos y distinto de 00000000.
         public static bool ValidarDNI(string dni)
         {
             if (dni.Length != 8) return false;
-            bool todoCeros = true;
-            for (int k = 0; k < 8; k++)
-            {
-                if (dni[k] < '0' || dni[k] > '9') return false;
-                if (dni[k] != '0') todoCeros = false;
-            }
-            return !todoCeros;
+            if (!SoloDigitos(dni)) return false;
+            return dni != "00000000";
         }
 
         // Nombres y apellidos: solo letras y espacios, mínimo 2 letras.
@@ -36,12 +46,13 @@ namespace MesaDePartes
             }
             return letras >= 2;
         }
+
         // El ';' es el separador del archivo: no puede aparecer dentro de un dato.
         public static bool TieneSeparador(string texto)
         {
             return texto.IndexOf(';') != -1;
         }
- 
+
         public static bool EsEstadoValido(string estado)
         {
             for (int k = 0; k < Expediente.Estados.Length; k++)
@@ -50,7 +61,7 @@ namespace MesaDePartes
             }
             return false;
         }
- 
+
         // Días de un mes (considera años bisiestos).
         public static int DiasDelMes(int mes, int anio)
         {
@@ -66,13 +77,6 @@ namespace MesaDePartes
         // Devuelve: 0 = válida | 1 = formato incorrecto | 2 = día o mes inexistente | 3 = año fuera de rango
         public static int ValidarFecha(string fec)
         {
-        // Año máximo permitido: el año actual del sistema (antes estaba fijo en 2026).
-        public const int AnioMinimo = 2020;
-        public static int AnioMaximo()
-        {
-            return DateTime.Now.Year;
-        }
-
             if (fec.Length != 10) return 1;
             for (int k = 0; k < 10; k++)
             {

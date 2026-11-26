@@ -52,8 +52,8 @@ namespace MesaDePartes
             // Si la lista está ordenada por código, también se prueba la búsqueda binaria.
             if (clsExpedientes.EstaOrdenadoPorCodigo(exps, cantidad))
             {
-                int compBinaria;
-                clsExpedientes.BuscarBinarioIterativo(exps, cantidad, buscado, out compBinaria);
+                int compBinaria = 0;
+                clsExpedientes.BuscarBinario(exps, buscado, 0, cantidad - 1, ref compBinaria);
                 Console.WriteLine("Búsqueda binaria: " + compBinaria + " comparaciones (lista ordenada por código).");
             }
             else
@@ -184,7 +184,9 @@ namespace MesaDePartes
         }
  
         // ---------- 4. LISTAR ----------
-        public static void ListarExpedientes(Expediente[] exps, int cantidad)
+        // Lista los expedientes de forma recursiva; k es la posición que se muestra en cada llamada.
+        public static void ListarExpedientes(Expediente[] exps, int cantidad, int 
+
         {
             if (cantidad == 0)
             {
@@ -192,12 +194,22 @@ namespace MesaDePartes
                 return;
             }
  
-            Console.WriteLine("==================================================");
-            Console.WriteLine("         LISTADO GENERAL DE EXPEDIENTES");
-            Console.WriteLine("==================================================");
-            for (int i = 0; i < cantidad; i++)
-                Console.WriteLine("[" + (i + 1) + "] " + exps[i].ToString());
-            Console.WriteLine("Total de expedientes: " + cantidad);
+            if (k == 0)
+            {
+                Console.WriteLine("==================================================");
+                Console.WriteLine("         LISTADO GENERAL DE EXPEDIENTES");
+                Console.WriteLine("==================================================");
+            }
+ 
+            if (k >= cantidad)                               // caso base: no quedan expedientes
+            {
+                Console.WriteLine("Total de expedientes: " + cantidad);
+                return;
+            }
+ 
+            Console.WriteLine("[" + (k + 1) + "] " + exps[k].ToString());
+            ListarExpedientes(exps, cantidad, k + 1);        // caso recursivo
+
         }
  
         // Pide un código existente. Devuelve la posición o -1 si no existe.
