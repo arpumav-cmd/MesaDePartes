@@ -41,8 +41,9 @@ namespace MesaDePartes
             Console.WriteLine(" MESA DE PARTES DIGITAL - I.E. N.° 81770");
             Console.WriteLine("==================================================");
             Console.WriteLine("1. Registrar y Almacenar Expediente");
-            Console.WriteLine("2. Buscar Expediente (por código o apellido)");
-            Console.WriteLine("3. Ordenar por Apellido A-Z");
+            Console.WriteLine("2. Buscar Expediente (código, apellido o asunto)");
+            Console.WriteLine("3. Ordenar (por código o apellido)");
+
             Console.WriteLine("4. Listar Todos los Expedientes");
             Console.WriteLine("5. Modificar Expediente");
             Console.WriteLine("6. Cambiar Estado del Expediente");

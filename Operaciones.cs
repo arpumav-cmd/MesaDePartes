@@ -31,10 +31,11 @@ namespace MesaDePartes
                 return;
             }
  
-            Console.WriteLine("Buscar por: 1. Código   2. Apellido");
+             Console.WriteLine("Buscar por: 1. Código   2. Apellido   3. Texto del asunto");
             int tipo = Entrada.LeerOpcion();
             if (tipo == 1) BuscarPorCodigo(exps, cantidad);
             else if (tipo == 2) BuscarPorApellido(exps, cantidad);
+            else if (tipo == 3) BuscarPorAsunto(exps, cantidad);
             else Console.WriteLine("Opción no válida.");
         }
  
@@ -69,6 +70,29 @@ namespace MesaDePartes
                 }
             }
             MostrarResumenBusqueda(encontrados, "No se encontró ningún expediente con el apellido: " + buscado);
+                    }
+ 
+        // Busca un texto dentro del asunto (IndexOf, sin distinguir mayúsculas).
+        private static void BuscarPorAsunto(Expediente[] exps, int cantidad)
+        {
+            string buscado = Entrada.PedirBusqueda("Ingrese el texto a buscar en el asunto:");
+            if (buscado.Length == 0)
+            {
+                Console.WriteLine("ERROR: Debe escribir un texto para buscar.");
+                return;
+            }
+ 
+            int encontrados = 0;
+            for (int k = 0; k < cantidad; k++)
+            {
+                if (exps[k].Asunto.IndexOf(buscado, StringComparison.OrdinalIgnoreCase) != -1)
+                {
+                    encontrados++;
+                    MostrarCoincidencia(exps[k], encontrados);
+                }
+            }
+            MostrarResumenBusqueda(encontrados, "No se encontró ningún asunto que contenga: " + buscado);
+
         }
  
         // Muestra un expediente encontrado en una búsqueda por apellido o por asunto.
@@ -104,19 +128,28 @@ namespace MesaDePartes
                 Console.WriteLine("No hay suficientes expedientes para ordenar.");
                 return;
             }
+                        Console.WriteLine("Ordenar por: 1. Código   2. Apellido");
+            int criterio = Entrada.LeerOpcion();
+            if (criterio != 1 && criterio != 2)
+            {
+                Console.WriteLine("Opción no válida.");
+                return;
+            }
  
             int comparaciones = 0;
             int intercambios = 0;
  
             Console.WriteLine();
-            Console.WriteLine("====== MÉTODO BURBUJA: ORDEN ALFABÉTICO POR APELLIDO ======");
+            Console.WriteLine("====== MÉTODO BURBUJA: ORDEN POR " + (criterio == 1 ? "CÓDIGO" : "APELLIDO") + " ======");
             Console.WriteLine("Lista ANTES de ordenar:");
             MostrarOrden(exps, cantidad);
             Console.WriteLine();
  
             for (int i = 0; i <= cantidad - 2; i++)
             {
-                int cambiosPasada = clsExpedientes.PasadaBurbuja(exps, cantidad, i, ref comparaciones, ref intercambios);
+            int cambiosPasada = clsExpedientes.PasadaBurbuja(exps, cantidad, i, criterio,
+                                                                 ref comparaciones, ref intercambios);
+
                 Console.WriteLine("Pasada " + (i + 1) + " (" + cambiosPasada + " intercambios):");
                 MostrarOrden(exps, cantidad);
             }
@@ -127,7 +160,7 @@ namespace MesaDePartes
             Console.WriteLine("Comparaciones realizadas: " + comparaciones);
             Console.WriteLine("Intercambios realizados:  " + intercambios);
             if (intercambios == 0)
-                Console.WriteLine("(La lista ya estaba ordenada por apellido.)");
+            Console.WriteLine("(La lista ya estaba ordenada.)");
             Console.WriteLine("============================================================");
         }
  
@@ -152,7 +185,23 @@ namespace MesaDePartes
         private static int PedirExistente(Expediente[] exps, int cantidad, string accion)
         {
             string buscado = Entrada.PedirBusqueda("Ingrese el código del expediente a " + accion + " (Ej: EXP-001):").ToUpper();
+            
             int pos = clsExpedientes.BuscarIndice(exps, cantidad, buscado);
+                        int compLineal = (pos == -1) ? cantidad : pos + 1;
+            Console.WriteLine("Búsqueda lineal: " + compLineal + " comparaciones.");
+ 
+            // Si la lista está ordenada por código, también se prueba la búsqueda binaria.
+            if (clsExpedientes.EstaOrdenadoPorCodigo(exps, cantidad))
+            {
+                int compBinaria;
+                clsExpedientes.BuscarBinarioIterativo(exps, cantidad, buscado, out compBinaria);
+                Console.WriteLine("Búsqueda binaria: " + compBinaria + " comparaciones (lista ordenada por código).");
+            }
+            else
+            {
+                Console.WriteLine("(Para comparar con la búsqueda binaria, ordene primero por código: opción 3.)");
+            }
+ 
             if (pos == -1)
                 Console.WriteLine("No se encontró ningún expediente con el código: " + buscado);
             return pos;
