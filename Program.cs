@@ -8,6 +8,9 @@ namespace MesaDePartes
         {
             Console.OutputEncoding = new UTF8Encoding(false);   // para ver tildes y ñ
             Console.InputEncoding = new UTF8Encoding(false);
+            Expediente[] expedientes = new Expediente[clsExpedientes.CapacidadInicial];
+            int cantidad = 0;
+
 
             int opc;
             do
@@ -16,12 +19,12 @@ namespace MesaDePartes
 
                 switch (opc)
                 {
-                    case 1: Operaciones.RegistrarExpediente(); break;
-                    case 2: Operaciones.BuscarExpediente(); break;
-                    case 3: Operaciones.OrdenarExpedientes(); break;
-                    case 4: Operaciones.ListarExpedientes(); break;
-                    case 5: Operaciones.ModificarExpediente(); break;
-                    case 6: Operaciones.EliminarExpediente(); break;
+                    case 1: Operaciones.RegistrarExpediente(ref expedientes, ref cantidad); break;
+                    case 2: Operaciones.BuscarExpediente(expedientes, cantidad); break;
+                    case 3: Operaciones.OrdenarExpedientes(expedientes, cantidad); break;
+                    case 4: Operaciones.ListarExpedientes(expedientes, cantidad); break;
+                    case 5: Operaciones.ModificarExpediente(expedientes, cantidad); break;
+                    case 6: Operaciones.EliminarExpediente(expedientes, ref cantidad); break;
                     case 7: Console.WriteLine("Saliendo del sistema de Mesa de Partes Digital..."); break;
                     default: Console.WriteLine("Opción no válida. Por favor, elija un número entre 1 y 7."); break;
                 }

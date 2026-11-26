@@ -12,9 +12,17 @@ namespace MesaDePartes
                 op = int.Parse(txt);
             return op;
         }
+                // Muestra un mensaje y devuelve el texto escrito (sin espacios sobrantes).
+        public static string PedirBusqueda(string mensaje)
+        {
+            Console.WriteLine(mensaje);
+            return (Console.ReadLine() ?? "").Trim();
+        }
+ 
+
 
         // Pide el código y repite hasta que no esté vacío ni repetido (evita códigos duplicados).
-        public static string PedirCodigo()
+        public static string PedirCodigo(Expediente[] exps, int cantidad)
         {
             string cod;
             bool valido;
@@ -25,7 +33,7 @@ namespace MesaDePartes
                 valido = false;
                 if (cod.Length < 3)
                     Console.WriteLine("ERROR: El código debe tener al menos 3 caracteres.");
-                else if (Datos.BuscarIndice(cod) != -1)
+                else if (clsExpedientes.BuscarIndice(exps, cantidad, cod) != -1)
                     Console.WriteLine("ERROR: El código " + cod + " ya existe. Ingrese otro.");
                 else
                     valido = true;
