@@ -238,7 +238,36 @@ namespace MesaDePartes
             }
         }
  
-        // ---------- 6. ELIMINAR ----------
+        // ---------- 6. CAMBIAR ESTADO ----------
+        public static void CambiarEstado(Expediente[] exps, int cantidad)
+        {
+            if (cantidad == 0)
+            {
+                Console.WriteLine("No hay expedientes registrados.");
+                return;
+            }
+ 
+            int pos = PedirExistente(exps, cantidad, "actualizar");
+            if (pos == -1) return;
+ 
+            Console.WriteLine("Estado actual: " + exps[pos].Estado);
+            Console.WriteLine("Nuevo estado:");
+            for (int k = 0; k < Expediente.Estados.Length; k++)
+                Console.WriteLine((k + 1) + ". " + Expediente.Estados[k]);
+ 
+            int op = Entrada.LeerOpcion();
+            if (op < 1 || op > Expediente.Estados.Length)
+            {
+                Console.WriteLine("Opción no válida.");
+                return;
+            }
+ 
+            exps[pos].Estado = Expediente.Estados[op - 1];
+            Console.WriteLine("Estado actualizado a: " + exps[pos].Estado);
+        }
+ 
+        // ---------- 7. ELIMINAR ----------
+
         public static void EliminarExpediente(Expediente[] exps, ref int cantidad)
         {
             if (cantidad == 0)

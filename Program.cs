@@ -24,11 +24,13 @@ namespace MesaDePartes
                     case 3: Operaciones.OrdenarExpedientes(expedientes, cantidad); break;
                     case 4: Operaciones.ListarExpedientes(expedientes, cantidad); break;
                     case 5: Operaciones.ModificarExpediente(expedientes, cantidad); break;
-                    case 6: Operaciones.EliminarExpediente(expedientes, ref cantidad); break;
-                    case 7: Console.WriteLine("Saliendo del sistema de Mesa de Partes Digital..."); break;
-                    default: Console.WriteLine("Opción no válida. Por favor, elija un número entre 1 y 7."); break;
+                    case 6: Operaciones.CambiarEstado(expedientes, cantidad); break;
+                    case 7: Operaciones.EliminarExpediente(expedientes, ref cantidad); break;
+                    case 0: Console.WriteLine("Saliendo del sistema de Mesa de Partes Digital..."); break;
+                    default: Console.WriteLine("Opción no válida. Por favor, elija un número entre 0 y 7."); break;
+
                 }
-            } while (opc != 7);
+            } while (opc != 0);
         }
 
         // ---------- MENÚ ----------
@@ -43,9 +45,11 @@ namespace MesaDePartes
             Console.WriteLine("3. Ordenar por Apellido A-Z");
             Console.WriteLine("4. Listar Todos los Expedientes");
             Console.WriteLine("5. Modificar Expediente");
-            Console.WriteLine("6. Eliminar Expediente");
-            Console.WriteLine("7. Salir");
-            Console.WriteLine("Seleccione una opción (1-7):");
+            Console.WriteLine("6. Cambiar Estado del Expediente");
+            Console.WriteLine("7. Eliminar Expediente");
+            Console.WriteLine("0. Salir");
+            Console.WriteLine("Seleccione una opción (0-7):");
+
             return Entrada.LeerOpcion();
         }
     }

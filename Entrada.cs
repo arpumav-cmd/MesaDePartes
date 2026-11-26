@@ -3,13 +3,14 @@ namespace MesaDePartes
     // Cada función repite la pregunta hasta que el dato sea válido.
     public static class Entrada
     {
-        // Lee una opción de un solo dígito; si escriben letras u otra cosa, devuelve 0.
+        // Lee una opción numérica (puede tener varios dígitos). Si no es un número, devuelve -1.
         public static int LeerOpcion()
         {
             string txt = (Console.ReadLine() ?? "").Trim();
-            int op = 0;
-            if (txt.Length == 1 && txt[0] >= '0' && txt[0] <= '9')
-                op = int.Parse(txt);
+            int op;
+            if (!int.TryParse(txt, out op))
+                op = -1;
+
             return op;
         }
                 // Muestra un mensaje y devuelve el texto escrito (sin espacios sobrantes).
