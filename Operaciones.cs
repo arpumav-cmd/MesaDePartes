@@ -1,12 +1,12 @@
 namespace MesaDePartes
 {
-    // FLUJOS DE MENÚ: piden datos (Entrada), llaman a la lógica (clsExpedientes)
-    // y muestran resultados. Las funciones que pueden cambiar los datos devuelven
-    // true para que Program.cs guarde el archivo automáticamente.
+    // Flujo de cada opción del menú: pide los datos (Entrada), usa la lógica (clsExpedientes)
+    // y muestra el resultado. Las que pueden cambiar los datos devuelven true para que
+    // Program guarde el archivo.
     public static class Operaciones
     {
         // ---------- 1. REGISTRAR ----------
-        public static bool RegistrarExpediente(ref Expediente[] exps, ref int cantidad)
+        public static bool Registrar(ref Expediente[] exps, ref int cantidad)
         {
             string cod = Entrada.PedirCodigo(exps, cantidad);
             string dni = Entrada.PedirDNI();
@@ -16,137 +16,75 @@ namespace MesaDePartes
             string tip = Entrada.PedirTexto("Ingrese Tipo de Trámite:", Validaciones.MinTramite);
             string asu = Entrada.PedirTexto("Ingrese Asunto de la solicitud:", Validaciones.MinAsunto);
             string fec = Entrada.PedirFecha();
- 
-            Expediente nuevo = new Expediente(cod, dni, ape, nom, gra, tip, asu, fec, Expediente.Estados[0]);
-            clsExpedientes.Agregar(ref exps, ref cantidad, nuevo);
- 
+
+            clsExpedientes.Agregar(ref exps, ref cantidad,
+                new Expediente(cod, dni, ape, nom, gra, tip, asu, fec, Expediente.Estados[0]));
             Console.WriteLine("¡Éxito! Expediente [" + cod + "] registrado.");
             return true;
         }
- 
+
         // ---------- 2. BUSCAR ----------
-        public static void BuscarExpediente(Expediente[] exps, int cantidad)
+        public static void Buscar(Expediente[] exps, int cantidad)
         {
-            if (cantidad == 0)
-            {
-                Console.WriteLine("No hay expedientes registrados para buscar.");
-                return;
-            }
- 
             Console.WriteLine("Buscar por: 1. Código   2. Apellido   3. Texto del asunto");
             int tipo = Entrada.LeerOpcion();
             if (tipo == 1) BuscarPorCodigo(exps, cantidad);
-            else if (tipo == 2) BuscarPorApellido(exps, cantidad);
-            else if (tipo == 3) BuscarPorAsunto(exps, cantidad);
+            else if (tipo == 2 || tipo == 3) BuscarPorTexto(exps, cantidad, tipo == 2);
             else Console.WriteLine("Opción no válida.");
         }
- 
+
         private static void BuscarPorCodigo(Expediente[] exps, int cantidad)
         {
-            string buscado = Entrada.PedirBusqueda("Ingrese el código que desea buscar (Ej: EXP-001):").ToUpper();
- 
-            int pos = clsExpedientes.BuscarIndice(exps, cantidad, buscado);
-            int compLineal = (pos == -1) ? cantidad : pos + 1;
-            Console.WriteLine("Búsqueda lineal: " + compLineal + " comparaciones.");
- 
+            string codigo = Entrada.Leer("Ingrese el código a buscar (Ej: EXP-001):").ToUpper();
+
+            int pos = clsExpedientes.BuscarIndice(exps, cantidad, codigo);
+            Console.WriteLine("Búsqueda lineal: " + (pos == -1 ? cantidad : pos + 1) + " comparaciones.");
+
             // Si la lista está ordenada por código, también se prueba la búsqueda binaria.
             if (clsExpedientes.EstaOrdenadoPorCodigo(exps, cantidad))
             {
-                int compBinaria = 0;
-                clsExpedientes.BuscarBinario(exps, buscado, 0, cantidad - 1, ref compBinaria);
-                Console.WriteLine("Búsqueda binaria: " + compBinaria + " comparaciones (lista ordenada por código).");
+                int pasos = 0;
+                clsExpedientes.BuscarBinario(exps, codigo, 0, cantidad - 1, ref pasos);
+                Console.WriteLine("Búsqueda binaria: " + pasos + " comparaciones (lista ordenada por código).");
             }
             else
-            {
-                Console.WriteLine("(Para comparar con la búsqueda binaria, ordene primero por código: opción 3.)");
-            }
- 
-            if (pos == -1)
-                Console.WriteLine("No se encontró ningún expediente con el código: " + buscado);
-            else
-                Console.WriteLine(exps[pos].ToDetalle());
+                Console.WriteLine("(Ordene por código con la opción 3 para comparar con la búsqueda binaria.)");
+
+            if (pos == -1) Console.WriteLine("No se encontró el código: " + codigo);
+            else Console.WriteLine(exps[pos].ToDetalle());
         }
- 
-        private static void BuscarPorApellido(Expediente[] exps, int cantidad)
+
+        // Busca por el inicio del apellido (porApellido = true) o por un texto dentro del asunto.
+        private static void BuscarPorTexto(Expediente[] exps, int cantidad, bool porApellido)
         {
-            string buscado = Entrada.PedirBusqueda("Ingrese el apellido que desea buscar (Ej: Alaya):").ToUpper();
-            int n = buscado.Length;
-            if (n == 0)
-            {
-                Console.WriteLine("ERROR: Debe escribir un apellido para buscar.");
-                return;
-            }
- 
+            string texto = Entrada.Leer(porApellido ? "Ingrese el apellido a buscar (Ej: Alaya):"
+                                                    : "Ingrese el texto a buscar en el asunto:");
             int encontrados = 0;
-            for (int k = 0; k < cantidad; k++)
+            for (int k = 0; k < cantidad && texto != ""; k++)
             {
-                string apMay = exps[k].Apellidos.ToUpper();
-                if (apMay.Length >= n && apMay.Substring(0, n) == buscado)
+                bool coincide = porApellido
+                    ? exps[k].Apellidos.StartsWith(texto, StringComparison.OrdinalIgnoreCase)
+                    : exps[k].Asunto.Contains(texto, StringComparison.OrdinalIgnoreCase);
+                if (coincide)
                 {
                     encontrados++;
-                    MostrarCoincidencia(exps[k], encontrados);
+                    Console.WriteLine(exps[k].ToDetalle());
                 }
             }
-            MostrarResumenBusqueda(encontrados, "No se encontró ningún expediente con el apellido: " + buscado);
+            Console.WriteLine(encontrados == 0 ? "No se encontraron coincidencias."
+                                               : "Expedientes encontrados: " + encontrados);
         }
- 
-        // Busca un texto dentro del asunto (IndexOf, sin distinguir mayúsculas).
-        private static void BuscarPorAsunto(Expediente[] exps, int cantidad)
+
+        // ---------- 3. ORDENAR ----------
+        // Devuelve true si el orden cambió (hay que guardar).
+        public static bool Ordenar(Expediente[] exps, int cantidad)
         {
-            string buscado = Entrada.PedirBusqueda("Ingrese el texto a buscar en el asunto:");
-            if (buscado.Length == 0)
+            if (cantidad < 2)
             {
-                Console.WriteLine("ERROR: Debe escribir un texto para buscar.");
-                return;
-            }
- 
-            int encontrados = 0;
-            for (int k = 0; k < cantidad; k++)
-            {
-                if (exps[k].Asunto.IndexOf(buscado, StringComparison.OrdinalIgnoreCase) != -1)
-                {
-                    encontrados++;
-                    MostrarCoincidencia(exps[k], encontrados);
-                }
-            }
-            MostrarResumenBusqueda(encontrados, "No se encontró ningún asunto que contenga: " + buscado);
-        }
- 
-        // Muestra un expediente encontrado en una búsqueda por apellido o por asunto.
-        private static void MostrarCoincidencia(Expediente e, int numero)
-        {
-            Console.WriteLine("   ¡COINCIDENCIA " + numero + "!");
-            Console.WriteLine(e.ToDetalle());
-        }
- 
-        private static void MostrarResumenBusqueda(int encontrados, string mensajeNoEncontrado)
-        {
-            if (encontrados == 0)
-                Console.WriteLine(mensajeNoEncontrado);
-            else
-                Console.WriteLine("Expedientes encontrados: " + encontrados);
-        }
- 
-        // ---------- 3. ORDENAR (BURBUJA CON SEGUIMIENTO) ----------
-        private static void MostrarOrden(Expediente[] exps, int cantidad)
-        {
-            for (int k = 0; k < cantidad; k++)
-            {
-                Console.Write("[" + exps[k].Codigo + " " + exps[k].Apellidos + ", "
-                    + exps[k].Nombres + " - " + exps[k].Dni + "] ");
-            }
-            Console.WriteLine();
-        }
- 
-        // Devuelve true si hubo intercambios (el orden de los datos cambió y hay que guardar).
-        public static bool OrdenarExpedientes(Expediente[] exps, int cantidad)
-        {
-            if (cantidad <= 1)
-            {
-                Console.WriteLine("No hay suficientes expedientes para ordenar.");
+                Console.WriteLine("Se necesitan al menos 2 expedientes para ordenar.");
                 return false;
             }
- 
+
             Console.WriteLine("Ordenar por: 1. Código   2. Apellido");
             int criterio = Entrada.LeerOpcion();
             if (criterio != 1 && criterio != 2)
@@ -154,210 +92,136 @@ namespace MesaDePartes
                 Console.WriteLine("Opción no válida.");
                 return false;
             }
- 
-            int comparaciones = 0;
-            int intercambios = 0;
- 
-            Console.WriteLine();
-            Console.WriteLine("====== MÉTODO BURBUJA: ORDEN POR " + (criterio == 1 ? "CÓDIGO" : "APELLIDO") + " ======");
-            Console.WriteLine("Lista ANTES de ordenar:");
-            MostrarOrden(exps, cantidad);
-            Console.WriteLine();
- 
-            for (int i = 0; i <= cantidad - 2; i++)
-            {
-                int cambiosPasada = clsExpedientes.PasadaBurbuja(exps, cantidad, i, criterio,
-                                                                 ref comparaciones, ref intercambios);
-                Console.WriteLine("Pasada " + (i + 1) + " (" + cambiosPasada + " intercambios):");
-                MostrarOrden(exps, cantidad);
-            }
- 
-            Console.WriteLine();
-            Console.WriteLine("Lista DESPUÉS de ordenar:");
-            MostrarOrden(exps, cantidad);
-            Console.WriteLine("Comparaciones realizadas: " + comparaciones);
-            Console.WriteLine("Intercambios realizados:  " + intercambios);
-            if (intercambios == 0)
-                Console.WriteLine("(La lista ya estaba ordenada.)");
-            Console.WriteLine("============================================================");
+
+            int comparaciones, intercambios;
+            clsExpedientes.Ordenar(exps, cantidad, criterio, out comparaciones, out intercambios);
+
+            Listar(exps, cantidad);
+            Console.WriteLine("Método burbuja -> comparaciones: " + comparaciones + " | intercambios: " + intercambios);
             return intercambios > 0;
         }
- 
-        // ---------- 4. LISTAR ----------
-        // Lista los expedientes de forma recursiva; k es la posición que se muestra en cada llamada.
-        public static void ListarExpedientes(Expediente[] exps, int cantidad, int 
 
+        // ---------- 4. LISTAR ----------
+        // Recursiva: cada llamada muestra el expediente k y se llama con k + 1.
+        public static void Listar(Expediente[] exps, int cantidad, int k = 0)
         {
-            if (cantidad == 0)
-            {
-                Console.WriteLine("La lista de expedientes está vacía.");
-                return;
-            }
- 
             if (k == 0)
-            {
-                Console.WriteLine("==================================================");
-                Console.WriteLine("         LISTADO GENERAL DE EXPEDIENTES");
-                Console.WriteLine("==================================================");
-            }
- 
-            if (k >= cantidad)                               // caso base: no quedan expedientes
+                Console.WriteLine("=== LISTADO DE EXPEDIENTES ===");
+            if (k >= cantidad)                                    // caso base: no quedan expedientes
             {
                 Console.WriteLine("Total de expedientes: " + cantidad);
                 return;
             }
- 
-            Console.WriteLine("[" + (k + 1) + "] " + exps[k].ToString());
-            ListarExpedientes(exps, cantidad, k + 1);        // caso recursivo
-
+            Console.WriteLine("[" + (k + 1) + "] " + exps[k]);
+            Listar(exps, cantidad, k + 1);                        // caso recursivo
         }
- 
-        // Pide un código existente. Devuelve la posición o -1 si no existe.
+
+        // Pide un código y devuelve su posición (o -1 si no existe).
         private static int PedirExistente(Expediente[] exps, int cantidad, string accion)
         {
-            string buscado = Entrada.PedirBusqueda("Ingrese el código del expediente a " + accion + " (Ej: EXP-001):").ToUpper();
-            int pos = clsExpedientes.BuscarIndice(exps, cantidad, buscado);
+            string codigo = Entrada.Leer("Ingrese el código del expediente a " + accion + ":").ToUpper();
+            int pos = clsExpedientes.BuscarIndice(exps, cantidad, codigo);
             if (pos == -1)
-                Console.WriteLine("No se encontró ningún expediente con el código: " + buscado);
+                Console.WriteLine("No se encontró el código: " + codigo);
             return pos;
         }
- 
-        // ---------- 5. MODIFICAR ----------
-        public static bool ModificarExpediente(Expediente[] exps, int cantidad)
+
+        // ---------- 5. MODIFICAR (un campo por vez) ----------
+        public static bool Modificar(Expediente[] exps, int cantidad)
         {
-            if (cantidad == 0)
-            {
-                Console.WriteLine("No hay expedientes registrados para modificar.");
-                return false;
-            }
- 
             int pos = PedirExistente(exps, cantidad, "modificar");
             if (pos == -1) return false;
- 
+
             Expediente e = exps[pos];
-            bool huboCambios = false;
-            int campo;
-            do
+            Console.WriteLine(e.ToDetalle());
+            Console.WriteLine("¿Qué desea modificar? 1. DNI  2. Apellidos  3. Nombres  4. Grado  5. Trámite  6. Fecha  7. Asunto");
+            switch (Entrada.LeerOpcion())
             {
-                Console.WriteLine("Datos actuales:");
-                Console.WriteLine(e.ToDetalle());
-                MostrarMenuModificar();
-                campo = Entrada.LeerOpcion();
- 
-                if (ModificarCampo(e, campo))
-                    huboCambios = true;
-            } while (campo != 8);
-            return huboCambios;
-        }
- 
-        private static void MostrarMenuModificar()
-        {
-            Console.WriteLine("¿Qué desea modificar?");
-            Console.WriteLine("1. DNI");
-            Console.WriteLine("2. Apellidos");
-            Console.WriteLine("3. Nombres");
-            Console.WriteLine("4. Grado y Sección");
-            Console.WriteLine("5. Tipo de Trámite");
-            Console.WriteLine("6. Fecha de Recepción");
-            Console.WriteLine("7. Asunto");
-            Console.WriteLine("8. Terminar modificación");
-        }
- 
-        // Pide el nuevo valor del campo elegido. Devuelve true si se modificó algo.
-        private static bool ModificarCampo(Expediente e, int campo)
-        {
-            switch (campo)
-            {
-                case 1:
-                    e.Dni = Entrada.PedirDNI();
-                    Console.WriteLine("DNI actualizado.");
-                    return true;
-                case 2:
-                    e.Apellidos = Entrada.PedirNombre("Ingrese nuevos Apellidos:");
-                    Console.WriteLine("Apellidos actualizados.");
-                    return true;
-                case 3:
-                    e.Nombres = Entrada.PedirNombre("Ingrese nuevos Nombres:");
-                    Console.WriteLine("Nombres actualizados.");
-                    return true;
-                case 4:
-                    e.Grado = Entrada.PedirTexto("Ingrese nuevo Grado y Sección (Ej: 3ro A):", Validaciones.MinGrado);
-                    Console.WriteLine("Grado y Sección actualizados.");
-                    return true;
-                case 5:
-                    e.TipoTramite = Entrada.PedirTexto("Ingrese nuevo Tipo de Trámite:", Validaciones.MinTramite);
-                    Console.WriteLine("Tipo de trámite actualizado.");
-                    return true;
-                case 6:
-                    e.Fecha = Entrada.PedirFecha();
-                    Console.WriteLine("Fecha actualizada.");
-                    return true;
-                case 7:
-                    e.Asunto = Entrada.PedirTexto("Ingrese nuevo Asunto:", Validaciones.MinAsunto);
-                    Console.WriteLine("Asunto actualizado.");
-                    return true;
-                case 8:
-                    Console.WriteLine("Modificación finalizada.");
-                    return false;
+                case 1: e.Dni = Entrada.PedirDNI(); break;
+                case 2: e.Apellidos = Entrada.PedirNombre("Nuevos Apellidos:"); break;
+                case 3: e.Nombres = Entrada.PedirNombre("Nuevos Nombres:"); break;
+                case 4: e.Grado = Entrada.PedirTexto("Nuevo Grado y Sección:", Validaciones.MinGrado); break;
+                case 5: e.TipoTramite = Entrada.PedirTexto("Nuevo Tipo de Trámite:", Validaciones.MinTramite); break;
+                case 6: e.Fecha = Entrada.PedirFecha(); break;
+                case 7: e.Asunto = Entrada.PedirTexto("Nuevo Asunto:", Validaciones.MinAsunto); break;
                 default:
                     Console.WriteLine("Opción no válida.");
                     return false;
             }
+            Console.WriteLine("Expediente actualizado.");
+            return true;
         }
- 
+
         // ---------- 6. CAMBIAR ESTADO ----------
         public static bool CambiarEstado(Expediente[] exps, int cantidad)
         {
-            if (cantidad == 0)
-            {
-                Console.WriteLine("No hay expedientes registrados.");
-                return false;
-            }
- 
             int pos = PedirExistente(exps, cantidad, "actualizar");
             if (pos == -1) return false;
- 
+
             Console.WriteLine("Estado actual: " + exps[pos].Estado);
-            Console.WriteLine("Nuevo estado:");
             for (int k = 0; k < Expediente.Estados.Length; k++)
                 Console.WriteLine((k + 1) + ". " + Expediente.Estados[k]);
- 
+
             int op = Entrada.LeerOpcion();
             if (op < 1 || op > Expediente.Estados.Length)
             {
                 Console.WriteLine("Opción no válida.");
                 return false;
             }
- 
             exps[pos].Estado = Expediente.Estados[op - 1];
             Console.WriteLine("Estado actualizado a: " + exps[pos].Estado);
             return true;
         }
- 
+
         // ---------- 7. ELIMINAR ----------
-        public static bool EliminarExpediente(Expediente[] exps, ref int cantidad)
+        public static bool Eliminar(Expediente[] exps, ref int cantidad)
         {
-            if (cantidad == 0)
-            {
-                Console.WriteLine("No hay expedientes registrados para eliminar.");
-                return false;
-            }
- 
             int pos = PedirExistente(exps, cantidad, "eliminar");
             if (pos == -1) return false;
- 
+
             Console.WriteLine(exps[pos].ToDetalle());
-            string confirma = Entrada.PedirBusqueda("¿Está seguro de eliminar este expediente? (S/N):").ToUpper();
- 
-            if (confirma == "S")
+            if (Entrada.Leer("¿Está seguro de eliminarlo? (S/N):").ToUpper() != "S")
             {
-                clsExpedientes.Eliminar(exps, ref cantidad, pos);
-                Console.WriteLine("Expediente eliminado correctamente.");
-                return true;
+                Console.WriteLine("Eliminación cancelada.");
+                return false;
             }
- 
-            Console.WriteLine("Eliminación cancelada.");
-            return false;
+            clsExpedientes.Eliminar(exps, ref cantidad, pos);
+            Console.WriteLine("Expediente eliminado correctamente.");
+            return true;
+        }
+
+        // ---------- 10. RESUMEN (arreglo bidimensional) ----------
+        public static void Resumen(Expediente[] exps, int cantidad)
+        {
+            string[] tramites = new string[cantidad];
+            int filas;
+            int[,] tabla = clsExpedientes.Resumir(exps, cantidad, tramites, out filas);
+            int columnas = Expediente.Estados.Length;
+            int[] totalColumna = new int[columnas];
+
+            Console.Write("Trámite".PadRight(22));
+            foreach (string estado in Expediente.Estados)
+                Console.Write(estado.PadRight(12));
+            Console.WriteLine("Total");
+
+            for (int f = 0; f < filas; f++)
+            {
+                string nombre = tramites[f].Length > 21 ? tramites[f].Substring(0, 21) : tramites[f];
+                Console.Write(nombre.PadRight(22));
+                int totalFila = 0;
+                for (int c = 0; c < columnas; c++)
+                {
+                    Console.Write(tabla[f, c].ToString().PadRight(12));
+                    totalFila += tabla[f, c];
+                    totalColumna[c] += tabla[f, c];
+                }
+                Console.WriteLine(totalFila);
+            }
+
+            Console.Write("TOTAL".PadRight(22));
+            for (int c = 0; c < columnas; c++)
+                Console.Write(totalColumna[c].ToString().PadRight(12));
+            Console.WriteLine(cantidad);
         }
     }
 }

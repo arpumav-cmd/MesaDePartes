@@ -1,118 +1,63 @@
 namespace MesaDePartes
 {
-    // Lectura por teclado. Cada función repite la pregunta hasta que el dato sea válido.
+    // Lectura por teclado: cada función repite la pregunta hasta que el dato sea válido.
     public static class Entrada
     {
-        // Lee una opción numérica (puede tener varios dígitos). Si no es un número, devuelve -1.
+        // Lee una opción numérica. Si lo escrito no es un número, devuelve -1.
         public static int LeerOpcion()
         {
-            string txt = (Console.ReadLine() ?? "").Trim();
             int op;
-            if (!int.TryParse(txt, out op))
-                op = -1;
-
-            return op;
+            return int.TryParse(Console.ReadLine(), out op) ? op : -1;
         }
-                // Muestra un mensaje y devuelve el texto escrito (sin espacios sobrantes).
-        public static string PedirBusqueda(string mensaje)
+
+        // Muestra un mensaje y devuelve lo escrito, sin espacios sobrantes.
+        public static string Leer(string mensaje)
         {
             Console.WriteLine(mensaje);
             return (Console.ReadLine() ?? "").Trim();
         }
- 
 
-
-        // Pide un código en MAYÚSCULAS; no vacío, sin ';' y sin repetir.
         public static string PedirCodigo(Expediente[] exps, int cantidad)
         {
-            string cod;
-            bool valido;
-            do
-            {
-                Console.WriteLine("Ingrese el código del expediente (Ej: EXP-001):");
-                cod = (Console.ReadLine() ?? "").Trim().ToUpper();
-                valido = false;
-                if (cod.Length < Validaciones.MinCodigo)
-                    Console.WriteLine("ERROR: El código debe tener al menos " + Validaciones.MinCodigo + " caracteres.");
-                else if (Validaciones.TieneSeparador(cod))
-                    Console.WriteLine("ERROR: No se permite el carácter ';' en este campo.");
-                else if (clsExpedientes.BuscarIndice(exps, cantidad, cod) != -1)
-                    Console.WriteLine("ERROR: El código " + cod + " ya existe. Ingrese otro.");
-                else
-                    valido = true;
-            } while (!valido);
+            string cod = Leer("Ingrese el código del expediente (Ej: EXP-001):").ToUpper();
+            while (cod.Length < Validaciones.MinCodigo || Validaciones.TieneSeparador(cod)
+                   || clsExpedientes.BuscarIndice(exps, cantidad, cod) != -1)
+                cod = Leer("ERROR: código muy corto, con ';' o ya existente. Ingrese otro:").ToUpper();
             return cod;
         }
 
         public static string PedirDNI()
         {
-            string dni;
-            do
-            {
-                Console.WriteLine("Ingrese DNI del solicitante (8 dígitos numéricos):");
-                dni = (Console.ReadLine() ?? "").Trim();
-                if (!Validaciones.ValidarDNI(dni))
-                    Console.WriteLine("ERROR: El DNI debe tener exactamente 8 dígitos numéricos (y no ser 00000000).");
-            } while (!Validaciones.ValidarDNI(dni));
+            string dni = Leer("Ingrese DNI del solicitante (8 dígitos):");
+            while (!Validaciones.ValidarDNI(dni))
+                dni = Leer("ERROR: el DNI debe tener 8 dígitos numéricos (y no ser 00000000). Ingrese de nuevo:");
             return dni;
         }
 
         public static string PedirNombre(string mensaje)
         {
-            string nom;
-            do
-            {
-                Console.WriteLine(mensaje);
-                nom = (Console.ReadLine() ?? "").Trim();
-                if (!Validaciones.ValidarNombre(nom))
-                    Console.WriteLine("ERROR: Use solo letras y espacios (mínimo 2 letras). No se permiten números ni símbolos.");
-            } while (!Validaciones.ValidarNombre(nom));
+            string nom = Leer(mensaje);
+            while (!Validaciones.ValidarNombre(nom))
+                nom = Leer("ERROR: use solo letras y espacios (mínimo 2 letras). Ingrese de nuevo:");
             return nom;
         }
-        // Texto libre con longitud mínima. No admite ';' (es el separador del archivo).
+
+        // Texto libre con largo mínimo y sin ';'.
         public static string PedirTexto(string mensaje, int minimo)
         {
-            string txt;
-            bool valido;
-            do
-            {
-                Console.WriteLine(mensaje);
-                txt = (Console.ReadLine() ?? "").Trim();
-                valido = false;
-                if (txt.Length < minimo)
-                    Console.WriteLine("ERROR: Este campo debe tener al menos " + minimo + " caracteres.");
-                else if (Validaciones.TieneSeparador(txt))
-                    Console.WriteLine("ERROR: No se permite el carácter ';' en este campo.");
-                else
-                    valido = true;
-            } while (!valido);
+            string txt = Leer(mensaje);
+            while (txt.Length < minimo || Validaciones.TieneSeparador(txt))
+                txt = Leer("ERROR: mínimo " + minimo + " caracteres y sin el símbolo ';'. Ingrese de nuevo:");
             return txt;
         }
 
         public static string PedirFecha()
         {
-            string fec;
-            int codErr;
-            do
-            {
-                Console.WriteLine("Ingrese Fecha de Recepción (DD/MM/AAAA):");
-                fec = (Console.ReadLine() ?? "").Trim();
-                codErr = Validaciones.ValidarFecha(fec);
-                switch (codErr)
-                {
-                    case 1:
-                        Console.WriteLine("ERROR: Formato incorrecto. Use DD/MM/AAAA (Ej: 20/10/2026).");
-                        break;
-                    case 2:
-                        Console.WriteLine("ERROR: Esa fecha no existe en el calendario (revise el día y el mes).");
-                        break;
-                    case 3:
-                        Console.WriteLine("ERROR: Año no permitido. Debe estar entre " + Validaciones.AnioMinimo
-                            + " y " + Validaciones.AnioMaximo() + ".");
-                        break;
-                }
-            } while (codErr != 0);
-            return fec;
+            string fecha = Leer("Ingrese Fecha de Recepción (DD/MM/AAAA):");
+            while (!Validaciones.ValidarFecha(fecha))
+                fecha = Leer("ERROR: use una fecha real DD/MM/AAAA entre " + Validaciones.AñoMinimo
+                             + " y " + DateTime.Now.Year + ". Ingrese de nuevo:");
+            return fecha;
         }
     }
 }
